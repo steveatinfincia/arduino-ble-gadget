@@ -28,6 +28,11 @@ void GadgetBle::enableWifiSetupSettings(
     _onWifiSettingsChanged = onWifiSettingsChanged;
 }
 
+void GadgetBle::enableNUS(
+        std::function<void(std::string)> onNUSRX) {
+    _onNUSRX = onNUSRX;
+}
+
 void GadgetBle::setCurrentWifiSsid(std::string ssid) {
     _wifiSsidSetting = ssid;
     if (_wifiSsidChar != NULL) {
@@ -347,6 +352,13 @@ void GadgetBle::writeBatteryLevel(uint8_t percent) {
     _batteryLevel = _percent;
 }
 
+void GadgetBle::nusTX(std::string buffer) {
+    if (_nusTXChar != nullptr) {
+        _nusTXChar->setValue((uint8_t*)buffer.c_str(), buffer.length());
+        _nusTXChar->notify();
+    }
+}
+
 void GadgetBle::commit() {
     if (esp_timer_get_time() - _lastCacheTime >= (_sampleIntervalMs * 1000)) {
         _lastCacheTime = esp_timer_get_time();
@@ -394,6 +406,15 @@ void GadgetBle::onWrite(BLECharacteristic* characteristic) {
         if (_onWifiSettingsChanged != NULL) {
             _onWifiSettingsChanged(_wifiSsidSetting, wifiPwd);
         }
+    } else if (characteristic->getUUID().toString().compare(
+                   NUS_CHAR_RX_UUID) == 0) {
+        std::string rxValue = characteristic->getValue();
+
+        if (rxValue.length() > 0) {
+            if (_onNUSRX != nullptr) {
+                _onNUSRX(rxValue);
+            }
+        }
     }
 }
 
@@ -418,6 +439,23 @@ void GadgetBle::_bleInit() {
     // Initialize BLEServer
     BLEServer* bleServer = BLEDevice::createServer();
     bleServer->setCallbacks(this);
+
+
+    if (_onNUSRX != nullptr) {
+        BLEService* bleNUSService =
+            bleServer->createService(NUS_SERVICE_UUID);
+            
+        _nusTXChar = bleNUSService->createCharacteristic(
+                NUS_CHAR_TX_UUID, BLECharacteristic::PROPERTY_READ |
+                                  BLECharacteristic::PROPERTY_NOTIFY);
+        _nusTXChar->addDescriptor(new BLE2902());
+
+        _nusRXChar = bleNUSService->createCharacteristic(
+                NUS_CHAR_RX_UUID, BLECharacteristic::PROPERTY_WRITE);
+        _nusRXChar->setCallbacks(this);
+
+        bleNUSService->start();
+    }
 
     // - Create Download Service
     BLEService* bleDownloadService =

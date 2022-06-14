@@ -39,6 +39,15 @@ static const char* const BATTERY_SERVICE_UUID =
 static const char* const BATTERY_CHAR_UUID = 
     "2a19";
 
+
+static const char* const NUS_SERVICE_UUID =
+    "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+static const char* const NUS_CHAR_RX_UUID =
+    "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+static const char* const NUS_CHAR_TX_UUID =
+    "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+
+
 // BLE Protocol Specifics
 
 static const char* const GADGET_NAME = "S";
@@ -88,6 +97,8 @@ class GadgetBle: BLECharacteristicCallbacks, BLEServerCallbacks {
     explicit GadgetBle(DataType dataType);
     void enableWifiSetupSettings(
         std::function<void(std::string, std::string)> onWifiSettingsChanged);
+    void enableNUS(
+        std::function<void(std::string)> onNUSRX);
     void setCurrentWifiSsid(std::string ssid);
     void begin();
     void setDataType(DataType dataType);
@@ -102,6 +113,7 @@ class GadgetBle: BLECharacteristicCallbacks, BLEServerCallbacks {
     void writePM10p0(float pm10);
     void writeHCHO(float hcho);
     void writeBatteryLevel(uint8_t percent);
+    void nusTX(std::string buffer);
     void commit();
     void handleEvents();
     String getDeviceIdString() {
@@ -139,6 +151,9 @@ class GadgetBle: BLECharacteristicCallbacks, BLEServerCallbacks {
     BLECharacteristic* _sampleCntChar;
     BLECharacteristic* _wifiSsidChar;
     BLECharacteristic* _batteryLevelChar;
+
+    BLECharacteristic* _nusRXChar;
+    BLECharacteristic* _nusTXChar;
 
     uint8_t _batteryLevel = 0; 
 
@@ -192,6 +207,7 @@ class GadgetBle: BLECharacteristicCallbacks, BLEServerCallbacks {
     // WifiSettings change callbacks
     std::string _wifiSsidSetting = "";
     std::function<void(std::string, std::string)> _onWifiSettingsChanged;
+    std::function<void(std::string)> _onNUSRX;
 };
 
 #endif
