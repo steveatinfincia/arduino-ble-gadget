@@ -145,7 +145,7 @@ class GadgetBle: BLECharacteristicCallbacks, BLEServerCallbacks {
     String _deviceIdString;
 
     int64_t _lastCacheTime = 0;
-    uint32_t _sampleIntervalMs = 600000; // default at 10 min
+    uint32_t _sampleIntervalMs = 60000; // default at 1 min
     uint32_t _sampleBufferIdx = 0;
     bool _sampleBufferWraped = false;
     std::array<uint8_t, MAX_SAMPLE_SIZE> _currentSample = {};
